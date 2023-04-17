@@ -8,3 +8,14 @@
 
 
 }
+
+.info {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    color: white;
+    left: 20px;
+    padding: 10px;
+    position: fixed;
+    top: 20px;
+    z-index: 99;
+}
