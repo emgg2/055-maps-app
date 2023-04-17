@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { v4 } from 'uuid'; 
+import { computeHeadingLevel } from '@testing-library/react';
 
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZW1nZzIyMjIiLCJhIjoiY2t2djU1ZWxoM3QzazJudGsyZHg3MjU1MSJ9.Z5KPKymYnQGwQJ9ZBz3JRQ';
@@ -32,6 +33,31 @@ export const useMapbox = ( initPoint ) => {
 // map and coords
   const map = useRef();
   const [coords, setCoords] = useState(initPoint);
+
+
+// create function in order to create markers
+// no puede ser una funcion normal ya q cada vez q el hook se vuelva a ejecutar va a volver a crear esta función 
+// lo q va a crear un nuevo espacio en memoria y aunq se le ponga la dependencia en el useEffect se va a estar ejecutando una y otra vez
+// y crearía un montón de listeners de click de mapa
+
+  const addMark = useCallback(
+    (ev) => {
+      
+        const { lng, lat } = ev.lngLat;
+        const marker = new mapboxgl.Marker();
+        marker.id = v4(); // TODO: si el marcador ya tiene id
+
+        marker  
+            .setLngLat([ lng, lat])
+            .addTo( map.current )
+            .setDraggable( true ); 
+
+        markers.current[ marker.id ] = marker; 
+    },
+    [],
+  )
+  
+
   useEffect(() => {
     const mapObj = new mapboxgl.Map({
       container: mapDiv.current, // container ID
@@ -60,20 +86,14 @@ export const useMapbox = ( initPoint ) => {
 
   // click on map in order to get a mark 
   useEffect(() => {
-    map.current?.on('click', ( ev ) => {
-        const { lng, lat } = ev.lngLat;
-        const marker = new mapboxgl.Marker();
-        marker.id = v4(); // TODO: si el marcador ya tiene id
+    
+    /*map.current?.on('click', ( ev ) => {
+        addMark(ev); }) */
+    // como en el evento solo recibe un argumento y llama a una función mandando el mismo evento se puede simplificar el código de la siguiente manera. Es JS
+    // Lo q indica es que este listener va a llamar a un argumento, ese argumento se le pasa directamente a esa función "addMark" 
+    map.current?.on('click', addMark ); 
 
-        marker  
-            .setLngLat([ lng, lat])
-            .addTo( map.current )
-            .setDraggable( true ); 
-
-        markers.current[ marker.id ] = marker; 
-
-    }) 
-  }, [])
+  }, [addMark])
   
     
 
@@ -81,6 +101,7 @@ export const useMapbox = ( initPoint ) => {
 // exportar en orden alfabético cuando un hook exporta muchas cosas
 
   return {
+        addMark,
         coords,
         markers,
         setRef
