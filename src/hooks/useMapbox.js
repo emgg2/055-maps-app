@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { v4 } from 'uuid'; 
-import { computeHeadingLevel } from '@testing-library/react';
+import { Subject } from 'rxjs';
 
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZW1nZzIyMjIiLCJhIjoiY2t2djU1ZWxoM3QzazJudGsyZHg3MjU1MSJ9.Z5KPKymYnQGwQJ9ZBz3JRQ';
@@ -29,6 +29,13 @@ export const useMapbox = ( initPoint ) => {
   // Referencia a los marcadores como un objeto
   const markers = useRef({});
 
+  // Observables from RxJS
+  // One of them related to movement
+  const markMovement = useRef( new Subject() ); 
+  // The second one related to newMarker, es un useRef() pq  no quiero que se vuelva a generar cada vez que el componente se renderiza. Quiero que se mantenga la referencia a este objeto 
+  // este objeto se inicializa a new Subject que hay que importar de Rxjs
+  const newMarker = useRef( new Subject() ); 
+
   
 // map and coords
   const map = useRef();
@@ -53,6 +60,32 @@ export const useMapbox = ( initPoint ) => {
             .setDraggable( true ); 
 
         markers.current[ marker.id ] = marker; 
+
+
+        // TODO: si el marcador tiene ID no emitir
+
+        // newMarker.current.next( marker ) o tb
+        newMarker.current.next({
+          id: marker.id,
+          lng,
+          lat
+        })
+
+
+        // listening markers movements
+        // extraemos el target del evento ev { target }
+        marker.on('drag' , ({ target }) => {
+            const { id } = target;
+            const {lng, lat } = target.getLngLat();
+
+          markMovement.current.next({
+            id,
+            lng, 
+            lat
+          })
+
+            // TODO: emitir los cambios del marcador, el objeto 
+        })
     },
     [],
   )
@@ -99,11 +132,14 @@ export const useMapbox = ( initPoint ) => {
 
   
 // exportar en orden alfabético cuando un hook exporta muchas cosas
+// cuando se expone un observable, se pone un $ al final para indicar q es un observable
 
   return {
         addMark,
         coords,
         markers,
+        markMovement$: markMovement.current,
+        newMarker$: newMarker.current,
         setRef
   }
     
