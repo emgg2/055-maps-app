@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
 
 import { useMapbox } from '../hooks/useMapbox';
+import { SocketContext } from '../context/SocketContext';
 
 
 const initPoint = {
@@ -11,29 +12,53 @@ const initPoint = {
 
 export const MapPage = () => {
 
-  // para suscribirse al nuevo marcardor con $ a final que es como una S en mayuscula 
+  const { socket } = useContext( SocketContext );
 
+  // para suscribirse al nuevo marcardor con $ a final que es como una S en mayuscula 
   const { coords, setRef, newMarker$, markMovement$ } = useMapbox( initPoint );
+
+
   
+  // get active markers 
+  useEffect(()=>{
+    socket?.on('active_marks', ( activeMarks ) => {
+      console.log(activeMarks);
+    })
+  },[socket])
 
   // new marker
   useEffect(() => {
    
     newMarker$.subscribe( marker => {
+      socket?.emit('new_mark', marker );
+      
       // TODO: nuevo marcador emitir
-      console.log('new marker',marker);
+      
+      
+      console.log('new');
     })
-  }, [ newMarker$ ]);
+  }, [newMarker$, socket ]);
+
+
 
   useEffect( () => {
     markMovement$.subscribe( marker => {
-      console.log('mark movements',  marker );
+      //socket?.emit('mark_movements', markMovement$ );
 
     })
   }, [ markMovement$ ])
   
 
+  //TODO: escuchar nuevos marcadores
+  useEffect(() => {
+    socket?.on('new_mark', ( mark ) => {
+      console.log(mark);
+    })
 
+  }, [socket])
+  
+
+  
 
   // marker movement, suscribirse al markerMovement defined id useMapabox 
   // TODO: useEffect, escuchar todos los movimientos emitidos del marcador que se está moviendo
