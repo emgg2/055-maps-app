@@ -48,11 +48,14 @@ export const useMapbox = ( initPoint ) => {
 // y crearía un montón de listeners de click de mapa
 
   const addMark = useCallback(
-    (ev) => {
+    (ev, id) => {
       
-        const { lng, lat } = ev.lngLat;
+        // si no existe lngLat lo coge de ev que viene de MapPage
+        const { lng, lat } = ev.lngLat || ev;
+
         const marker = new mapboxgl.Marker();
-        marker.id = v4(); // TODO: si el marcador ya tiene id
+        // si no existe id se crea un nuevo indice 
+        marker.id =  id ?? v4(); // TODO: si el marcador ya tiene id
 
         marker  
             .setLngLat([ lng, lat])
@@ -62,21 +65,22 @@ export const useMapbox = ( initPoint ) => {
         markers.current[ marker.id ] = marker; 
 
 
-        // TODO: si el marcador tiene ID no emitir
+        
 
         // newMarker.current.next( marker ) o tb
-        newMarker.current.next({
-          id: marker.id,
-          lng,
-          lat
-        })
-
+        if( !id ) {
+          newMarker.current.next({
+            id: marker.id,
+            lng,
+            lat
+          })
+      }
 
         // listening markers movements
         // extraemos el target del evento ev { target }
         marker.on('drag' , ({ target }) => {
             const { id } = target;
-            const {lng, lat } = target.getLngLat();
+            const { lng, lat } = target.getLngLat();
 
           markMovement.current.next({
             id,
@@ -89,7 +93,15 @@ export const useMapbox = ( initPoint ) => {
     },
     [],
   )
-  
+
+  // function in order to move a marker
+  const moveMark = useCallback(
+    ({ id, lng, lat}) => {
+      markers.current[id].setLngLat({lng,lat});
+  },[]);
+
+
+    
 
   useEffect(() => {
     const mapObj = new mapboxgl.Map({
@@ -139,6 +151,7 @@ export const useMapbox = ( initPoint ) => {
         coords,
         markers,
         markMovement$: markMovement.current,
+        moveMark,
         newMarker$: newMarker.current,
         setRef
   }

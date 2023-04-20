@@ -1,7 +1,5 @@
-import React, { useContext, useEffect } from 'react'
-
-import { useMapbox } from '../hooks/useMapbox';
-import { SocketContext } from '../context/SocketContext';
+import React, {useEffect } from 'react';
+import { useSocketMapbox } from '../hooks/useSocketMapbox';
 
 
 const initPoint = {
@@ -12,57 +10,20 @@ const initPoint = {
 
 export const MapPage = () => {
 
-  const { socket } = useContext( SocketContext );
-
-  // para suscribirse al nuevo marcardor con $ a final que es como una S en mayuscula 
-  const { coords, setRef, newMarker$, markMovement$ } = useMapbox( initPoint );
-
-
+  const {  coords, setRef, activeMarks, createMark, moveMarkUpdated, newMark, setMarkUpdated} = useSocketMapbox ( initPoint );
   
   // get active markers 
-  useEffect(()=>{
-    socket?.on('active_marks', ( activeMarks ) => {
-      console.log(activeMarks);
-    })
-  },[socket])
-
+  useEffect(()=>{ activeMarks() },[ activeMarks])
   // new marker
-  useEffect(() => {
-   
-    newMarker$.subscribe( marker => {
-      socket?.emit('new_mark', marker );
-      
-      // TODO: nuevo marcador emitir
-      
-      
-      console.log('new');
-    })
-  }, [newMarker$, socket ]);
-
-
-
-  useEffect( () => {
-    markMovement$.subscribe( marker => {
-      //socket?.emit('mark_movements', markMovement$ );
-
-    })
-  }, [ markMovement$ ])
+  useEffect(() => { newMark() }, [ newMark ]);
+ // update marker position
+  useEffect( () => { setMarkUpdated() }, [ setMarkUpdated ])
+  // move markers all browsers connected, 
+  useEffect(() => { moveMarkUpdated()}, [moveMarkUpdated])
+  // create a new mark all browsers connected
+  useEffect(() => { createMark(); }, [createMark])
   
 
-  //TODO: escuchar nuevos marcadores
-  useEffect(() => {
-    socket?.on('new_mark', ( mark ) => {
-      console.log(mark);
-    })
-
-  }, [socket])
-  
-
-  
-
-  // marker movement, suscribirse al markerMovement defined id useMapabox 
-  // TODO: useEffect, escuchar todos los movimientos emitidos del marcador que se está moviendo
-  // por lo menos mostrar el objeto 
   
   return (
     <>
